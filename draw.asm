@@ -48,7 +48,7 @@ dxt_up:
     add di, 160
 
     ; draw the letter in center
-    mov ah, 0x4F          ; keep same attribute
+    mov ah, 0x8F          ; keep same attribute
     mov al, [bp+8]        ; character from [bp+8]
     mov word [es:di], ax
 

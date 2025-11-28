@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Assemble with NASM",
+            "type": "shell",
+            "command": "nasm",
+            "args": [
+                "-f", "bin",
+                "main.asm",
+                "-o", "main.com"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}

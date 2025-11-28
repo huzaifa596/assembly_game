@@ -10,6 +10,7 @@ jmp start
 %include "clear.asm"
 %include "print.asm"
 %include "delay.asm"
+%include "start.asm"
 inst: db 'Score:0'
 inst1: db 'Time:0'
 size: dw 7
@@ -58,6 +59,15 @@ l1:
 
 
 start:
+    call starter
+key:   
+     mov ah,0
+    int 16h
+    cmp ah,0x01
+    je end
+    cmp ah,0x39
+    jne key
+
     call clear  
     
     ; Print initial score and time
@@ -72,6 +82,6 @@ start:
     call print
     call looper
 
-
+end:
     mov ax, 0x4c00
     int 0x21

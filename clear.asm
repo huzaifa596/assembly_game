@@ -8,7 +8,7 @@ clear:
     mov es, ax
     mov di, 0
         
-    ; first line (white)         
+    ; first line (white)       
     mov cx, 80
     mov ax, 0x0720
     rep stosw
