@@ -1,0 +1,225 @@
+     1                                  ;L24-0695 -> Huzaifa Naseer
+     2                                  ;L24-0744 -> Zain Khan 
+     3                                  
+     4                                  ;-------------------------------------
+     5                                  
+     6                                  [org 0x0100]
+     7 00000000 E92F01                  jmp start
+     8                                  
+     9                                  %include "draw.asm"
+     1                              <1> draw:
+     2 00000003 55                  <1>     push bp
+     3 00000004 89E5                <1>     mov bp, sp
+     4 00000006 06                  <1>     push es
+     5 00000007 57                  <1>     push di
+     6 00000008 50                  <1>     push ax
+     7 00000009 51                  <1>     push cx
+     8 0000000A 52                  <1>     push dx
+     9                              <1> 
+    10                              <1>     ; row is [bp+4], col is [bp+6]
+    11 0000000B B85000              <1>     mov ax, 80
+    12 0000000E F76604              <1>     mul word [bp+4]      ; ax = row * 80
+    13 00000011 034606              <1>     add ax, [bp+6]       ; add column
+    14 00000014 D1E0                <1>     shl ax, 1            ; each cell = 2 bytes
+    15 00000016 89C7                <1>     mov di, ax
+    16                              <1> 
+    17 00000018 B800B8              <1>     mov ax, 0xb800
+    18 0000001B 8EC0                <1>     mov es, ax
+    19                              <1> 
+    20                              <1>     ; balloon outline color: attribute 0x4F, char 0xFE
+    21 0000001D B8FE4F              <1>     mov ax, 0x4FFE
+    22 00000020 B90000              <1>     mov cx, 0
+    23                              <1>     
+    24                              <1> nxt_down:
+    25 00000023 268905              <1>     mov word [es:di], ax ; vertical down
+    26 00000026 81C7A000            <1>     add di, 160
+    27 0000002A 41                  <1>     inc cx
+    28 0000002B 83F902              <1>     cmp cx, 2
+    29 0000002E 75F3                <1>     jne nxt_down
+    30                              <1> 
+    31                              <1> txt_right:
+    32 00000030 268905              <1>     mov word [es:di], ax ; horizontal right
+    33 00000033 83C702              <1>     add di, 2
+    34 00000036 41                  <1>     inc cx
+    35 00000037 83F905              <1>     cmp cx, 5
+    36 0000003A 75F4                <1>     jne txt_right
+    37                              <1> 
+    38 0000003C 83EF02              <1>     sub di, 2
+    39                              <1> dxt_up:
+    40 0000003F 268905              <1>     mov word [es:di], ax ; vertical up
+    41 00000042 81EFA000            <1>     sub di, 160
+    42 00000046 41                  <1>     inc cx
+    43 00000047 83F908              <1>     cmp cx, 8
+    44 0000004A 75F3                <1>     jne dxt_up
+    45                              <1> 
+    46 0000004C 81C79E00            <1>     add di, 158
+    47 00000050 268905              <1>     mov word [es:di], ax  ; close top
+    48 00000053 81C7A000            <1>     add di, 160
+    49                              <1> 
+    50                              <1>     ; draw the letter in center
+    51 00000057 B44F                <1>     mov ah, 0x4F          ; keep same attribute
+    52 00000059 8A4608              <1>     mov al, [bp+8]        ; character from [bp+8]
+    53 0000005C 268905              <1>     mov word [es:di], ax
+    54                              <1> 
+    55                              <1>     ; draw the string (line) under balloon
+    56 0000005F 81C74001            <1>     add di, 320
+    57 00000063 B44F                <1>     mov ah, 0x4F         ; attribute for the line
+    58 00000065 B0B3                <1>     mov al, 0xB3          ; character for the line
+    59 00000067 B90000              <1>     mov cx, 0
+    60                              <1> line:
+    61 0000006A 268905              <1>     mov word [es:di], ax
+    62 0000006D 41                  <1>     inc cx
+    63 0000006E 81C7A200            <1>     add di, 162
+    64 00000072 83F902              <1>     cmp cx, 2
+    65 00000075 75F3                <1>     jne line
+    66                              <1> 
+    67 00000077 5A                  <1>     pop dx
+    68 00000078 59                  <1>     pop cx
+    69 00000079 58                  <1>     pop ax
+    70 0000007A 5F                  <1>     pop di
+    71 0000007B 07                  <1>     pop es
+    72 0000007C 5D                  <1>     pop bp
+    73 0000007D C20600              <1>     ret 6
+    10                                  %include "clear.asm"
+     1                              <1> ; function to clear the screen
+     2                              <1> clear:
+     3 00000080 50                  <1>     push ax
+     4 00000081 06                  <1>     push es
+     5 00000082 57                  <1>     push di
+     6 00000083 51                  <1>     push cx
+     7 00000084 B800B8              <1>     mov ax, 0xb800
+     8 00000087 8EC0                <1>     mov es, ax
+     9 00000089 BF0000              <1>     mov di, 0
+    10                              <1>         
+    11                              <1>     ; first line (white)         
+    12 0000008C B95000              <1>     mov cx, 80
+    13 0000008F B82007              <1>     mov ax, 0x0720
+    14 00000092 F3AB                <1>     rep stosw
+    15                              <1>     
+    16                              <1>     ; blue color printing
+    17 00000094 B94006              <1>     mov cx, 1600
+    18 00000097 B8201F              <1>     mov ax, 0x1F20  ; Changed from 0xBF20 to 0x1F20 (blue on blue was hard to see)
+    19 0000009A F3AB                <1>     rep stosw
+    20                              <1>     
+    21                              <1>     ; green color printing
+    22 0000009C B94001              <1>     mov cx, 320
+    23 0000009F B8202A              <1>     mov ax, 0x2A20  ; Changed from 0xA020 to 0x2A20 (green on green)
+    24 000000A2 F3AB                <1>     rep stosw
+    25                              <1> 
+    26 000000A4 59                  <1>     pop cx
+    27 000000A5 5F                  <1>     pop di
+    28 000000A6 07                  <1>     pop es
+    29 000000A7 58                  <1>     pop ax
+    30 000000A8 C3                  <1>     ret
+    11                                  %include "print.asm"
+     1                              <1> print:
+     2 000000A9 55                  <1>     push bp
+     3 000000AA 89E5                <1>     mov bp, sp
+     4 000000AC 06                  <1>     push es
+     5 000000AD 50                  <1>     push ax
+     6 000000AE 53                  <1>     push bx
+     7 000000AF 51                  <1>     push cx
+     8 000000B0 57                  <1>     push di 
+     9 000000B1 56                  <1>     push si
+    10                              <1> 
+    11 000000B2 8B7606              <1>     mov si, [bp+6]    ; string address
+    12 000000B5 8B4E04              <1>     mov cx, [bp+4]    ; string length
+    13 000000B8 B800B8              <1>     mov ax, 0xb800
+    14 000000BB 8EC0                <1>     mov es, ax
+    15 000000BD B407                <1>     mov ah, 0x07      ; attribute
+    16 000000BF 8B7E08              <1>     mov di, [bp+8]    ; position
+    17 000000C2 D1E7                <1>     shl di, 1         ; convert to video memory offset
+    18                              <1> 
+    19                              <1> printer:
+    20 000000C4 8A04                <1>     mov al, [si]
+    21 000000C6 268905              <1>     mov [es:di], ax
+    22 000000C9 46                  <1>     inc si
+    23 000000CA 83C702              <1>     add di, 2
+    24 000000CD E2F5                <1>     loop printer
+    25                              <1> 
+    26 000000CF 5E                  <1>     pop si
+    27 000000D0 5F                  <1>     pop di
+    28 000000D1 59                  <1>     pop cx
+    29 000000D2 5B                  <1>     pop bx
+    30 000000D3 58                  <1>     pop ax
+    31 000000D4 07                  <1>     pop es
+    32 000000D5 5D                  <1>     pop bp
+    33 000000D6 C20600              <1>     ret 6
+    12                                  %include "delay.asm"
+     1                              <1> delay:
+     2 000000D9 60                  <1>     pusha
+     3 000000DA B9C800              <1>     mov cx, 200           ; Reduced delay for better visibility
+     4                              <1> d1:
+     5 000000DD 51                  <1>     push cx
+     6 000000DE B9FF0F              <1>     mov cx, 0x0FFF       ; Reduced inner delay
+     7                              <1> d2:
+     8 000000E1 E2FE                <1>     loop d2
+     9 000000E3 59                  <1>     pop cx
+    10 000000E4 E2F7                <1>     loop d1
+    11 000000E6 61                  <1>     popa
+    12 000000E7 C3                  <1>     ret
+    13 000000E8 53636F72653A30          inst: db 'Score:0'
+    14 000000EF 54696D653A30            inst1: db 'Time:0'
+    15 000000F5 0700                    size: dw 7
+    16 000000F7 0600                    size1: dw 6
+    17                                  
+    18                                  
+    19                                  ; function to print the score and time
+    20                                  looper:
+    21 000000F9 55                          push bp
+    22 000000FA 89E5                        mov bp, sp
+    23 000000FC 60                          pusha
+    24                                  
+    25 000000FD B91900                      mov cx, 25           ; rows 24..0 (25 times)
+    26 00000100 BA1800                      mov dx, 24           ; start row at 24 (bottom)
+    27 00000103 BB3C00                      mov bx, 60           ; fixed column
+    28 00000106 B041                        mov al, 'A'          ; balloon letter
+    29                                      
+    30                                  l1:
+    31 00000108 50                          push ax              ; character -> [bp+8]
+    32 00000109 53                          push bx              ; column -> [bp+6]
+    33 0000010A 52                          push dx              ; row -> [bp+4]
+    34 0000010B E8F5FE                      call draw
+    35 0000010E E8C8FF                      call delay
+    36 00000111 E86CFF                      call clear
+    37                                      
+    38                                      ; Print score and time again after clearing
+    39 00000114 6A00                        push 0               ; position for score
+    40 00000116 68[E800]                    push inst            ; score string
+    41 00000119 FF36[F500]                  push word [size]     ; score string length
+    42 0000011D E889FF                      call print
+    43                                      
+    44 00000120 6A28                        push 40              ; position for time  
+    45 00000122 68[EF00]                    push inst1           ; time string
+    46 00000125 FF36[F700]                  push word [size1]    ; time string length
+    47 00000129 E87DFF                      call print
+    48                                      
+    49 0000012C 4A                          dec dx               ; move balloon up one row
+    50 0000012D E2D9                        loop l1
+    51                                  
+    52 0000012F 61                          popa
+    53 00000130 5D                          pop bp
+    54 00000131 C3                          ret
+    55                                  
+    56                                  
+    57                                  
+    58                                  
+    59                                  
+    60                                  start:
+    61 00000132 E84BFF                      call clear  
+    62                                      
+    63                                      ; Print initial score and time
+    64 00000135 6A00                        push 0               ; position for score
+    65 00000137 68[E800]                    push inst            ; score string
+    66 0000013A FF36[F500]                  push word [size]     ; score string length
+    67 0000013E E868FF                      call print
+    68                                      
+    69 00000141 6A28                        push 40              ; position for time  
+    70 00000143 68[EF00]                    push inst1           ; time string
+    71 00000146 FF36[F700]                  push word [size1]    ; time string length
+    72 0000014A E85CFF                      call print
+    73 0000014D E8A9FF                      call looper
+    74                                  
+    75                                  
+    76 00000150 B8004C                      mov ax, 0x4c00
+    77 00000153 CD21                        int 0x21
