@@ -54,7 +54,7 @@ dxt_up:
 
     ; draw the string (line) under balloon
     add di, 320
-    mov ah, 0x4F         ; attribute for the line
+    mov ah, 0x8F         ; attribute for the line
     mov al, 0xB3          ; character for the line
     mov cx, 0
 line:

@@ -6,12 +6,12 @@ clear:
     push cx
     mov ax, 0xb800
     mov es, ax
-    mov di, 0
+    mov di, 160
         
     ; first line (white)       
-    mov cx, 80
-    mov ax, 0x0720
-    rep stosw
+    ; mov cx, 80
+    ; mov ax, 0x0720
+    ; rep stosw
     
     ; blue color printing
     mov cx, 1600
