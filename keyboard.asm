@@ -1,6 +1,5 @@
 
-; Convert scan code to ASCII (simple version for A-Z)
-scan_to_ascii:
+scan:
     cmp al, 0x1E        ; A key
     jne check_b
     mov al, 'A'

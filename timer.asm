@@ -8,7 +8,8 @@ timer:
     push si
     push di
     push es
-
+   cmp byte[lives],0
+   je skipp2
     inc word [cs:tick]
     cmp word [cs:tick], 18
     jne skipp2
@@ -17,7 +18,7 @@ timer:
     dec word [cs:current_time]
 
     cmp word [cs:current_time], 0
-    jle stop_program2
+    je stop_program2
 
     ; -------- display time ----------
     mov ax, 0B800h
