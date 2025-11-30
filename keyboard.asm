@@ -1,41 +1,4 @@
 
-%include "main.asm"
-global keyboard_isr:
-    push ax
-    push bx
-    push es
-    
-    ; Read keyboard scan code
-    in al, 60h
-    
-    ; Check if key is pressed (bit 7 clear) or released (bit 7 set)
-    test al, 80h
-    jnz key_released
-    
-    ; Convert scan code to ASCII
-    call scan_to_ascii
-    mov [cs:current_key], al
-    
-    ; Check if it matches any balloon letter
-    call extern check_balloon_pop
-    
-key_released:
-    ; Send EOI to keyboard controller
-    in al, 61h
-    or al, 80h
-    out 61h, al
-    and al, 7Fh
-    out 61h, al
-    
-    ; Send EOI to PIC
-    mov al, 20h
-    out 20h, al
-    
-    pop es
-    pop bx
-    pop ax
-    iret
-
 ; Convert scan code to ASCII (simple version for A-Z)
 scan_to_ascii:
     cmp al, 0x1E        ; A key
@@ -167,6 +130,7 @@ check_z:
     jne no_match
     mov al, 'Z'
     ret
+
 no_match:
     mov al, 0           ; No valid letter
-    iret
+    ret

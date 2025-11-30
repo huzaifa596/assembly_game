@@ -1,0 +1,1045 @@
+     1                                  ;L24-0695 -> Huzaifa Naseer
+     2                                  ;L24-0744 -> Zain Khan 
+     3                                  
+     4                                  ;-------------------------------------
+     5                                  [org 0x0100]
+     6 00000000 E96F07                  jmp start
+     7                                  
+     8                                  ; ==================== FUNCTION INCLUDES ====================
+     9                                  %include "draw.asm"
+     1                              <1> draw:
+     2 00000003 55                  <1>     push bp
+     3 00000004 89E5                <1>     mov bp, sp
+     4 00000006 06                  <1>     push es
+     5 00000007 57                  <1>     push di
+     6 00000008 50                  <1>     push ax
+     7 00000009 51                  <1>     push cx
+     8 0000000A 52                  <1>     push dx
+     9                              <1> 
+    10                              <1>     ; row is [bp+4], col is [bp+6]
+    11 0000000B B85000              <1>     mov ax, 80
+    12 0000000E F76604              <1>     mul word [bp+4]      ; ax = row * 80
+    13 00000011 034606              <1>     add ax, [bp+6]       ; add column
+    14 00000014 D1E0                <1>     shl ax, 1            ; each cell = 2 bytes
+    15 00000016 89C7                <1>     mov di, ax
+    16                              <1> 
+    17 00000018 B800B8              <1>     mov ax, 0xb800
+    18 0000001B 8EC0                <1>     mov es, ax
+    19                              <1> 
+    20                              <1>     ; balloon outline color: attribute 0x4F, char 0xFE
+    21 0000001D B8FE4F              <1>     mov ax, 0x4FFE
+    22 00000020 B90000              <1>     mov cx, 0
+    23                              <1>     
+    24                              <1> nxt_down:
+    25 00000023 268905              <1>     mov word [es:di], ax ; vertical down
+    26 00000026 81C7A000            <1>     add di, 160
+    27 0000002A 41                  <1>     inc cx
+    28 0000002B 83F902              <1>     cmp cx, 2
+    29 0000002E 75F3                <1>     jne nxt_down
+    30                              <1> 
+    31                              <1> txt_right:
+    32 00000030 268905              <1>     mov word [es:di], ax ; horizontal right
+    33 00000033 83C702              <1>     add di, 2
+    34 00000036 41                  <1>     inc cx
+    35 00000037 83F905              <1>     cmp cx, 5
+    36 0000003A 75F4                <1>     jne txt_right
+    37                              <1> 
+    38 0000003C 83EF02              <1>     sub di, 2
+    39                              <1> dxt_up:
+    40 0000003F 268905              <1>     mov word [es:di], ax ; vertical up
+    41 00000042 81EFA000            <1>     sub di, 160
+    42 00000046 41                  <1>     inc cx
+    43 00000047 83F908              <1>     cmp cx, 8
+    44 0000004A 75F3                <1>     jne dxt_up
+    45                              <1> 
+    46 0000004C 81C79E00            <1>     add di, 158
+    47 00000050 268905              <1>     mov word [es:di], ax  ; close top
+    48 00000053 81C7A000            <1>     add di, 160
+    49                              <1> 
+    50                              <1>     ; draw the letter in center
+    51 00000057 B48F                <1>     mov ah, 0x8F          ; keep same attribute
+    52 00000059 8A4608              <1>     mov al, [bp+8]        ; character from [bp+8]
+    53 0000005C 268905              <1>     mov word [es:di], ax
+    54                              <1> 
+    55                              <1>     ; draw the string (line) under balloon
+    56 0000005F 81C74001            <1>     add di, 320
+    57 00000063 B48F                <1>     mov ah, 0x8F         ; attribute for the line
+    58 00000065 B0B3                <1>     mov al, 0xB3          ; character for the line
+    59 00000067 B90000              <1>     mov cx, 0
+    60                              <1> line:
+    61 0000006A 268905              <1>     mov word [es:di], ax
+    62 0000006D 41                  <1>     inc cx
+    63 0000006E 81C7A200            <1>     add di, 162
+    64 00000072 83F902              <1>     cmp cx, 2
+    65 00000075 75F3                <1>     jne line
+    66                              <1> 
+    67 00000077 5A                  <1>     pop dx
+    68 00000078 59                  <1>     pop cx
+    69 00000079 58                  <1>     pop ax
+    70 0000007A 5F                  <1>     pop di
+    71 0000007B 07                  <1>     pop es
+    72 0000007C 5D                  <1>     pop bp
+    73 0000007D C20600              <1>     ret 6
+    10                                  %include "clear.asm"
+     1                              <1> ; function to clear the screen
+     2                              <1> clear:
+     3 00000080 50                  <1>     push ax
+     4 00000081 06                  <1>     push es
+     5 00000082 57                  <1>     push di
+     6 00000083 51                  <1>     push cx
+     7 00000084 B800B8              <1>     mov ax, 0xb800
+     8 00000087 8EC0                <1>     mov es, ax
+     9 00000089 BFA000              <1>     mov di, 160
+    10                              <1>         
+    11                              <1>     ; first line (white)       
+    12                              <1>     ; mov cx, 80
+    13                              <1>     ; mov ax, 0x0720
+    14                              <1>     ; rep stosw
+    15                              <1>     
+    16                              <1>     ; blue color printing
+    17 0000008C B94006              <1>     mov cx, 1600
+    18 0000008F B8201F              <1>     mov ax, 0x1F20  ; Changed from 0xBF20 to 0x1F20 (blue on blue was hard to see)
+    19 00000092 F3AB                <1>     rep stosw
+    20                              <1>     
+    21                              <1>     ; green color printing
+    22 00000094 B94001              <1>     mov cx, 320
+    23 00000097 B8202A              <1>     mov ax, 0x2A20  ; Changed from 0xA020 to 0x2A20 (green on green)
+    24 0000009A F3AB                <1>     rep stosw
+    25                              <1> 
+    26 0000009C 59                  <1>     pop cx
+    27 0000009D 5F                  <1>     pop di
+    28 0000009E 07                  <1>     pop es
+    29 0000009F 58                  <1>     pop ax
+    30 000000A0 C3                  <1>     ret
+    11                                  %include "delay.asm"
+     1                              <1> delay:
+     2 000000A1 60                  <1>     pusha
+     3 000000A2 B9C800              <1>     mov cx, 200           ; Reduced delay for better visibility
+     4                              <1> d1:
+     5 000000A5 51                  <1>     push cx
+     6 000000A6 B9FF0F              <1>     mov cx, 0x0FFF       ; Reduced inner delay
+     7                              <1> d2:
+     8 000000A9 E2FE                <1>     loop d2
+     9 000000AB 59                  <1>     pop cx
+    10 000000AC E2F7                <1>     loop d1
+    11 000000AE 61                  <1>     popa
+    12 000000AF C3                  <1>     ret
+    12                                  %include "start.asm"
+     1                              <1> ;L24-0695 -> Huzaifa Naseer
+     2                              <1> ;L24-0744 -> Zain Khan 
+     3                              <1> 
+     4                              <1> [org 0x100]
+     5 000000B0 E9A102              <1> jmp starter
+     6                              <1> 
+     7                              <1> ; Unique variable names
+     8 000000B3 202023232323202020- <1> menu_title1: db '  ####    #####   #####      ####    #####   #####  ',0
+     8 000000BC 202323232323202020- <1>
+     8 000000C5 232323232320202020- <1>
+     8 000000CE 202023232323202020- <1>
+     8 000000D7 202323232323202020- <1>
+     8 000000E0 2323232323202000    <1>
+     9 000000E8 202323202023232020- <1> menu_title2: db ' ##  ##  ##   ##  ##  ##    ##  ##  ##   ##  ##  ## ',0
+     9 000000F1 232320202023232020- <1>
+     9 000000FA 232320202323202020- <1>
+     9 00000103 202323202023232020- <1>
+     9 0000010C 232320202023232020- <1>
+     9 00000115 2323202023232000    <1>
+    10 0000011D 202323232323202020- <1> menu_title3: db ' #####   ##   ##  #####     #####   ##   ##  #####  ',0
+    10 00000126 232320202023232020- <1>
+    10 0000012F 232323232320202020- <1>
+    10 00000138 202323232323202020- <1>
+    10 00000141 232320202023232020- <1>
+    10 0000014A 2323232323202000    <1>
+    11 00000152 202323202020202020- <1> menu_title4: db ' ##      ##   ##  ##        ##      ##   ##  ##     ',0
+    11 0000015B 232320202023232020- <1>
+    11 00000164 232320202020202020- <1>
+    11 0000016D 202323202020202020- <1>
+    11 00000176 232320202023232020- <1>
+    11 0000017F 2323202020202000    <1>
+    12 00000187 202323202020202020- <1> menu_title5: db ' ##       #####   ##        ##       #####   ##     ',0
+    12 00000190 202323232323202020- <1>
+    12 00000199 232320202020202020- <1>
+    12 000001A2 202323202020202020- <1>
+    12 000001AB 202323232323202020- <1>
+    12 000001B4 2323202020202000    <1>
+    13 000001BC 204649474854205749- <1> menu_subtitle: db ' FIGHT WITH ALPHABETS',0
+    13 000001C5 544820414C50484142- <1>
+    13 000001CE 45545300            <1>
+    14                              <1> 
+    15                              <1> ; Menu instructions
+    16 000001D2 312E20507265737320- <1> menu_opt1: db '1. Press P TO START '
+    16 000001DB 5020544F2053544152- <1>
+    16 000001E4 5420                <1>
+    17 000001E6 1300                <1> menu1_len: dw 19
+    18 000001E8 322E50524553532054- <1> menu_opt2: db '2.PRESS THE ALPAHBET IN THE BALLOON TO POP IT'
+    18 000001F1 484520414C50414842- <1>
+    18 000001FA 455420494E20544845- <1>
+    18 00000203 2042414C4C4F4F4E20- <1>
+    18 0000020C 544F20504F50204954  <1>
+    19 00000215 2D00                <1> menu2_len: dw 45
+    20 00000217 332E594F5520484156- <1> menu_opt3: db '3.YOU HAVE EXACTLY 1 MINUTE'
+    20 00000220 452045584143544C59- <1>
+    20 00000229 2031204D494E555445  <1>
+    21 00000232 1B00                <1> menu3_len: dw 27
+    22 00000234 342E4D414B45205355- <1> menu_opt4: db '4.MAKE SURE YOU ENJOY PLAYING'
+    22 0000023D 524520594F5520454E- <1>
+    22 00000246 4A4F5920504C415949- <1>
+    22 0000024F 4E47                <1>
+    23 00000251 1D00                <1> menu4_len: dw 29
+    24                              <1> 
+    25                              <1> ; Title line positions array
+    26                              <1> title_data:
+    27 00000253 [B300]06000F00      <1>     dw menu_title1, 6, 15
+    28 00000259 [E800]07000F00      <1>     dw menu_title2, 7, 15
+    29 0000025F [1D01]08000F00      <1>     dw menu_title3, 8, 15
+    30 00000265 [5201]09000F00      <1>     dw menu_title4, 9, 15
+    31 0000026B [8701]0A000F00      <1>     dw menu_title5, 10, 15
+    32 00000271 0000                <1>     dw 0
+    33                              <1> 
+    34                              <1> clear_screen:
+    35 00000273 60                  <1>     pusha
+    36 00000274 06                  <1>     push es
+    37 00000275 B800B8              <1>     mov ax, 0xb800
+    38 00000278 8EC0                <1>     mov es, ax
+    39 0000027A 31FF                <1>     xor di, di
+    40 0000027C B8204F              <1>     mov ax, 0x4F20
+    41 0000027F B9D007              <1>     mov cx, 2000
+    42 00000282 F3AB                <1>     rep stosw
+    43 00000284 07                  <1>     pop es
+    44 00000285 61                  <1>     popa
+    45 00000286 C3                  <1>     ret
+    46                              <1> 
+    47                              <1> print_string:
+    48 00000287 55                  <1>     push bp
+    49 00000288 89E5                <1>     mov bp, sp
+    50 0000028A 60                  <1>     pusha
+    51                              <1>     
+    52 0000028B B800B8              <1>     mov ax, 0xb800
+    53 0000028E 8EC0                <1>     mov es, ax
+    54                              <1>     
+    55                              <1>     ; Calculate position: (row * 80 + col) * 2
+    56 00000290 8B460A              <1>     mov ax, [bp+10]     ; row
+    57 00000293 BB5000              <1>     mov bx, 80
+    58 00000296 F7E3                <1>     mul bx
+    59 00000298 034608              <1>     add ax, [bp+8]      ; col
+    60 0000029B D1E0                <1>     shl ax, 1
+    61 0000029D 89C7                <1>     mov di, ax
+    62                              <1>     
+    63 0000029F 8B7606              <1>     mov si, [bp+6]      ; string
+    64 000002A2 8B4E04              <1>     mov cx, [bp+4]      ; length
+    65 000002A5 B440                <1>     mov ah, 0x40        ; attribute
+    66                              <1>     
+    67                              <1> .print_loop:
+    68 000002A7 AC                  <1>     lodsb
+    69 000002A8 AB                  <1>     stosw
+    70 000002A9 E2FC                <1>     loop .print_loop
+    71                              <1>     
+    72 000002AB 61                  <1>     popa
+    73 000002AC 5D                  <1>     pop bp
+    74 000002AD C20800              <1>     ret 8
+    75                              <1> 
+    76                              <1> print_menu_title:
+    77 000002B0 60                  <1>     pusha
+    78 000002B1 B800B8              <1>     mov ax, 0xb800
+    79 000002B4 8EC0                <1>     mov es, ax
+    80 000002B6 BB[5302]            <1>     mov bx, title_data
+    81                              <1>     
+    82                              <1> .title_loop:
+    83 000002B9 8B37                <1>     mov si, [bx]        ; string pointer
+    84 000002BB 85F6                <1>     test si, si
+    85 000002BD 7430                <1>     jz .print_subtitle
+    86                              <1>     
+    87                              <1>     ; Calculate position
+    88 000002BF 8B4702              <1>     mov ax, [bx+2]      ; row
+    89 000002C2 BA5000              <1>     mov dx, 80
+    90 000002C5 F7E2                <1>     mul dx
+    91 000002C7 034704              <1>     add ax, [bx+4]      ; col
+    92 000002CA D1E0                <1>     shl ax, 1
+    93 000002CC 89C7                <1>     mov di, ax
+    94                              <1>     
+    95 000002CE B44F                <1>     mov ah, 0x4F        ; attribute
+    96                              <1>     
+    97                              <1> .char_loop:
+    98 000002D0 AC                  <1>     lodsb
+    99 000002D1 84C0                <1>     test al, al
+   100 000002D3 7415                <1>     jz .next_line
+   101 000002D5 3C23                <1>     cmp al, '#'
+   102 000002D7 7507                <1>     jne .space
+   103 000002D9 26C7052007          <1>     mov word [es:di], 0x0720  ; black for letters
+   104 000002DE EB05                <1>     jmp .next_char
+   105                              <1> .space:
+   106 000002E0 26C705204F          <1>     mov word [es:di], 0x4F20  ; red for spaces
+   107                              <1> .next_char:
+   108 000002E5 83C702              <1>     add di, 2
+   109 000002E8 EBE6                <1>     jmp .char_loop
+   110                              <1> 
+   111                              <1> .next_line:
+   112 000002EA 83C306              <1>     add bx, 6
+   113 000002ED EBCA                <1>     jmp .title_loop
+   114                              <1> 
+   115                              <1> .print_subtitle:
+   116 000002EF B82C04              <1>     mov ax, 13 * 80 + 28
+   117 000002F2 D1E0                <1>     shl ax, 1
+   118 000002F4 89C7                <1>     mov di, ax
+   119 000002F6 BE[BC01]            <1>     mov si, menu_subtitle
+   120 000002F9 B440                <1>     mov ah, 0x40
+   121                              <1>     
+   122                              <1> .sub_loop:
+   123 000002FB AC                  <1>     lodsb
+   124 000002FC 84C0                <1>     test al, al
+   125 000002FE 7403                <1>     jz .done
+   126 00000300 AB                  <1>     stosw
+   127 00000301 EBF8                <1>     jmp .sub_loop
+   128                              <1> 
+   129                              <1> .done:
+   130 00000303 61                  <1>     popa
+   131 00000304 C3                  <1>     ret
+   132                              <1> 
+   133                              <1> print_menu_options:
+   134 00000305 60                  <1>     pusha
+   135                              <1>     ; Option 1
+   136 00000306 B80C00              <1>     mov ax, 12
+   137 00000309 50                  <1>     push ax
+   138 0000030A B81300              <1>     mov ax, 19
+   139 0000030D 50                  <1>     push ax
+   140 0000030E B8[D201]            <1>     mov ax, menu_opt1
+   141 00000311 50                  <1>     push ax
+   142 00000312 A1[E601]            <1>     mov ax, [menu1_len]
+   143 00000315 50                  <1>     push ax
+   144 00000316 E86EFF              <1>     call print_string
+   145                              <1>     
+   146                              <1>     ; Option 2
+   147 00000319 B80C00              <1>     mov ax, 12
+   148 0000031C 50                  <1>     push ax
+   149 0000031D B81400              <1>     mov ax, 20
+   150 00000320 50                  <1>     push ax
+   151 00000321 B8[E801]            <1>     mov ax, menu_opt2
+   152 00000324 50                  <1>     push ax
+   153 00000325 A1[1502]            <1>     mov ax, [menu2_len]
+   154 00000328 50                  <1>     push ax
+   155 00000329 E85BFF              <1>     call print_string
+   156                              <1>     
+   157                              <1>     ; Option 3
+   158 0000032C B80C00              <1>     mov ax, 12
+   159 0000032F 50                  <1>     push ax
+   160 00000330 B81500              <1>     mov ax, 21
+   161 00000333 50                  <1>     push ax
+   162 00000334 B8[1702]            <1>     mov ax, menu_opt3
+   163 00000337 50                  <1>     push ax
+   164 00000338 A1[3202]            <1>     mov ax, [menu3_len]
+   165 0000033B 50                  <1>     push ax
+   166 0000033C E848FF              <1>     call print_string
+   167                              <1>     
+   168                              <1>     ; Option 4
+   169 0000033F B80C00              <1>     mov ax, 12
+   170 00000342 50                  <1>     push ax
+   171 00000343 B81600              <1>     mov ax, 22
+   172 00000346 50                  <1>     push ax
+   173 00000347 B8[3402]            <1>     mov ax, menu_opt4
+   174 0000034A 50                  <1>     push ax
+   175 0000034B A1[5102]            <1>     mov ax, [menu4_len]
+   176 0000034E 50                  <1>     push ax
+   177 0000034F E835FF              <1>     call print_string
+   178 00000352 61                  <1>     popa
+   179 00000353 C3                  <1>     ret
+   180                              <1> 
+   181                              <1> starter:
+   182 00000354 E81CFF              <1>     call clear_screen
+   183 00000357 E856FF              <1>     call print_menu_title
+   184 0000035A E8A8FF              <1>     call print_menu_options
+   185                              <1>        
+   186 0000035D C3                  <1>     ret
+    13                                  %include "print.asm"
+     1                              <1> print:
+     2 0000035E 55                  <1>     push bp
+     3 0000035F 89E5                <1>     mov bp, sp
+     4 00000361 06                  <1>     push es
+     5 00000362 50                  <1>     push ax
+     6 00000363 53                  <1>     push bx
+     7 00000364 51                  <1>     push cx
+     8 00000365 57                  <1>     push di 
+     9 00000366 56                  <1>     push si
+    10                              <1> 
+    11 00000367 8B7606              <1>     mov si, [bp+6]    ; string address
+    12 0000036A 8B4E04              <1>     mov cx, [bp+4]    ; string length
+    13 0000036D B800B8              <1>     mov ax, 0xb800
+    14 00000370 8EC0                <1>     mov es, ax
+    15 00000372 B407                <1>     mov ah, 0x07      ; attribute
+    16 00000374 8B7E08              <1>     mov di, [bp+8]    ; position
+    17 00000377 D1E7                <1>     shl di, 1         ; convert to video memory offset
+    18                              <1> 
+    19                              <1> printer:
+    20 00000379 8A04                <1>     mov al, [si]
+    21 0000037B 268905              <1>     mov [es:di], ax
+    22 0000037E 46                  <1>     inc si
+    23 0000037F 83C702              <1>     add di, 2
+    24 00000382 E2F5                <1>     loop printer
+    25                              <1> 
+    26 00000384 5E                  <1>     pop si
+    27 00000385 5F                  <1>     pop di
+    28 00000386 59                  <1>     pop cx
+    29 00000387 5B                  <1>     pop bx
+    30 00000388 58                  <1>     pop ax
+    31 00000389 07                  <1>     pop es
+    32 0000038A 5D                  <1>     pop bp
+    33 0000038B C20600              <1>     ret 6
+    14                                  %include "keyboard.asm"
+     1                              <1> 
+     2                              <1> ; Convert scan code to ASCII (simple version for A-Z)
+     3                              <1> scan_to_ascii:
+     4 0000038E 3C1E                <1>     cmp al, 0x1E        ; A key
+     5 00000390 7503                <1>     jne check_b
+     6 00000392 B041                <1>     mov al, 'A'
+     7 00000394 C3                  <1>     ret
+     8                              <1> check_b:
+     9 00000395 3C30                <1>     cmp al, 0x30        ; B key
+    10 00000397 7503                <1>     jne check_c
+    11 00000399 B042                <1>     mov al, 'B'
+    12 0000039B C3                  <1>     ret
+    13                              <1> check_c:
+    14 0000039C 3C2E                <1>     cmp al, 0x2E        ; C key
+    15 0000039E 7503                <1>     jne check_d
+    16 000003A0 B043                <1>     mov al, 'C'
+    17 000003A2 C3                  <1>     ret
+    18                              <1> check_d:
+    19 000003A3 3C20                <1>     cmp al, 0x20        ; D key
+    20 000003A5 7503                <1>     jne check_e
+    21 000003A7 B044                <1>     mov al, 'D'
+    22 000003A9 C3                  <1>     ret
+    23                              <1> check_e:
+    24 000003AA 3C12                <1>     cmp al, 0x12        ; E key
+    25 000003AC 7503                <1>     jne check_f
+    26 000003AE B045                <1>     mov al, 'E'
+    27 000003B0 C3                  <1>     ret
+    28                              <1> check_f:
+    29 000003B1 3C21                <1>     cmp al, 0x21        ; F key
+    30 000003B3 7503                <1>     jne check_g
+    31 000003B5 B046                <1>     mov al, 'F'
+    32 000003B7 C3                  <1>     ret
+    33                              <1> check_g:
+    34 000003B8 3C22                <1>     cmp al, 0x22        ; G key
+    35 000003BA 7503                <1>     jne check_h
+    36 000003BC B047                <1>     mov al, 'G'
+    37 000003BE C3                  <1>     ret
+    38                              <1> check_h:
+    39 000003BF 3C23                <1>     cmp al, 0x23        ; H key
+    40 000003C1 7503                <1>     jne check_i
+    41 000003C3 B048                <1>     mov al, 'H'
+    42 000003C5 C3                  <1>     ret
+    43                              <1> check_i:
+    44 000003C6 3C17                <1>     cmp al, 0x17        ; I key
+    45 000003C8 7503                <1>     jne check_j
+    46 000003CA B049                <1>     mov al, 'I'
+    47 000003CC C3                  <1>     ret
+    48                              <1> check_j:
+    49 000003CD 3C24                <1>     cmp al, 0x24        ; J key
+    50 000003CF 7503                <1>     jne check_k
+    51 000003D1 B04A                <1>     mov al, 'J'
+    52 000003D3 C3                  <1>     ret
+    53                              <1> check_k:
+    54 000003D4 3C25                <1>     cmp al, 0x25        ; K key
+    55 000003D6 7503                <1>     jne check_l
+    56 000003D8 B04B                <1>     mov al, 'K'
+    57 000003DA C3                  <1>     ret
+    58                              <1> check_l:
+    59 000003DB 3C26                <1>     cmp al, 0x26        ; L key
+    60 000003DD 7503                <1>     jne check_m
+    61 000003DF B04C                <1>     mov al, 'L'
+    62 000003E1 C3                  <1>     ret
+    63                              <1> check_m:
+    64 000003E2 3C32                <1>     cmp al, 0x32        ; M key
+    65 000003E4 7503                <1>     jne check_n
+    66 000003E6 B04D                <1>     mov al, 'M'
+    67 000003E8 C3                  <1>     ret
+    68                              <1> check_n:
+    69 000003E9 3C31                <1>     cmp al, 0x31        ; N key
+    70 000003EB 7503                <1>     jne check_o
+    71 000003ED B04E                <1>     mov al, 'N'
+    72 000003EF C3                  <1>     ret
+    73                              <1> check_o:
+    74 000003F0 3C18                <1>     cmp al, 0x18        ; O key
+    75 000003F2 7503                <1>     jne check_p
+    76 000003F4 B04F                <1>     mov al, 'O'
+    77 000003F6 C3                  <1>     ret
+    78                              <1> check_p:
+    79 000003F7 3C19                <1>     cmp al, 0x19        ; P key
+    80 000003F9 7503                <1>     jne check_q
+    81 000003FB B050                <1>     mov al, 'P'
+    82 000003FD C3                  <1>     ret
+    83                              <1> check_q:
+    84 000003FE 3C10                <1>     cmp al, 0x10        ; Q key
+    85 00000400 7503                <1>     jne check_r
+    86 00000402 B051                <1>     mov al, 'Q'
+    87 00000404 C3                  <1>     ret
+    88                              <1> check_r:
+    89 00000405 3C13                <1>     cmp al, 0x13        ; R key
+    90 00000407 7503                <1>     jne check_s
+    91 00000409 B052                <1>     mov al, 'R'
+    92 0000040B C3                  <1>     ret
+    93                              <1> check_s:
+    94 0000040C 3C1F                <1>     cmp al, 0x1F        ; S key
+    95 0000040E 7503                <1>     jne check_t
+    96 00000410 B053                <1>     mov al, 'S'
+    97 00000412 C3                  <1>     ret
+    98                              <1> check_t:
+    99 00000413 3C14                <1>     cmp al, 0x14        ; T key
+   100 00000415 7503                <1>     jne check_u
+   101 00000417 B054                <1>     mov al, 'T'
+   102 00000419 C3                  <1>     ret
+   103                              <1> check_u:
+   104 0000041A 3C16                <1>     cmp al, 0x16        ; U key
+   105 0000041C 7503                <1>     jne check_v
+   106 0000041E B055                <1>     mov al, 'U'
+   107 00000420 C3                  <1>     ret
+   108                              <1> check_v:
+   109 00000421 3C2F                <1>     cmp al, 0x2F        ; V key
+   110 00000423 7503                <1>     jne check_w
+   111 00000425 B056                <1>     mov al, 'V'
+   112 00000427 C3                  <1>     ret
+   113                              <1> check_w:
+   114 00000428 3C11                <1>     cmp al, 0x11        ; W key
+   115 0000042A 7503                <1>     jne check_x
+   116 0000042C B057                <1>     mov al, 'W'
+   117 0000042E C3                  <1>     ret
+   118                              <1> check_x:
+   119 0000042F 3C2D                <1>     cmp al, 0x2D        ; X key
+   120 00000431 7503                <1>     jne check_y
+   121 00000433 B058                <1>     mov al, 'X'
+   122 00000435 C3                  <1>     ret
+   123                              <1> check_y:
+   124 00000436 3C15                <1>     cmp al, 0x15        ; Y key
+   125 00000438 7503                <1>     jne check_z
+   126 0000043A B059                <1>     mov al, 'Y'
+   127 0000043C C3                  <1>     ret
+   128                              <1> check_z:
+   129 0000043D 3C2C                <1>     cmp al, 0x2C        ; Z key
+   130 0000043F 7503                <1>     jne no_match
+   131 00000441 B05A                <1>     mov al, 'Z'
+   132 00000443 C3                  <1>     ret
+   133                              <1> 
+   134                              <1> no_match:
+   135 00000444 B000                <1>     mov al, 0           ; No valid letter
+   136 00000446 C3                  <1>     ret
+    15                                  %include "timer.asm"
+     1                              <1> ; ==================== TIMER INTERRUPT HANDLER ====================
+     2                              <1> %include "data.asm"
+     1                              <2> 
+     2                              <2> ; ==================== CONSTANTS ====================
+     3                              <2> BALL_COUNT equ 3
+     4                              <2> 
+     5                              <2> ; ==================== DATA SECTION ====================
+     6 00000447 170017001700        <2> ball_rows:      dw 23, 23, 23      ; Starting rows for 3 balloons
+     7 0000044D 000000000000        <2> ball_cols:      dw 0, 0, 0         ; Will be filled with random columns
+     8 00000453 414243              <2> ball_letters:   db 'A','B','C'     ; Current random letters in balloons
+     9 00000456 D204                <2> random_seed:    dw 1234            ; Seed for random number generation
+    10                              <2> 
+    11                              <2> ; Keyboard and game state variables
+    12 00000458 00000000            <2> old_keyboard:   dd 0
+    13 0000045C 00                  <2> current_key:    db 0
+    14 0000045D 0000                <2> score:          dw 0
+    15 0000045F 53636F72653A303030- <2> score_string:   db 'Score:000$'    ; Fixed: Added space for 3 digits + terminator
+    15 00000468 24                  <2>
+    16 00000469 0900                <2> score_length:   dw 9
+    17                              <2> 
+    18                              <2> ; Game control variables
+    19 0000046B 01                  <2> balloon1_active: db 1
+    20 0000046C 00                  <2> balloon2_active: db 0  
+    21 0000046D 00                  <2> balloon3_active: db 0
+    22 0000046E 0000                <2> spawn_timer: dw 0
+    23                              <2> 
+    24                              <2> ; UI strings
+    25 00000470 53636F72653A        <2> inst: db 'Score:'
+    26 00000476 54696D653A          <2> inst1: db 'Time:'
+    27 0000047B 0700                <2> size: dw 7
+    28 0000047D 0500                <2> size1: dw 5
+    29 0000047F 00000000            <2> old: dd 0
+    30 00000483 0000                <2> done: dw 0
+    31 00000485 0000                <2> tick: dw 0
+    32 00000487 3C00                <2> current_time: dw 60  ; Start from 60
+    33                              <2> 
+    34                              <2> ; Legacy variables (kept for compatibility)
+    35 00000489 00                  <2> bool1: db 0
+    36 0000048A 00                  <2> bool2: db 0
+    37 0000048B 00                  <2> bool3: db 0
+    38 0000048C 0A00                <2> lo: dw 10
+     3                              <1> timer:
+     4 0000048E 50                  <1>     push ax
+     5 0000048F 53                  <1>     push bx
+     6 00000490 51                  <1>     push cx
+     7 00000491 52                  <1>     push dx
+     8 00000492 56                  <1>     push si
+     9 00000493 57                  <1>     push di
+    10 00000494 06                  <1>     push es
+    11                              <1> 
+    12 00000495 2EFF06[8504]        <1>     inc word [cs:tick]
+    13 0000049A 2E833E[8504]12      <1>     cmp word [cs:tick], 18
+    14 000004A0 7543                <1>     jne skipp2
+    15                              <1> 
+    16 000004A2 2EC706[8504]0000    <1>     mov word [cs:tick], 0
+    17 000004A9 2EFF0E[8704]        <1>     dec word [cs:current_time]
+    18                              <1> 
+    19 000004AE 2E833E[8704]00      <1>     cmp word [cs:current_time], 0
+    20 000004B4 7E28                <1>     jle stop_program2
+    21                              <1> 
+    22                              <1>     ; -------- display time ----------
+    23 000004B6 B800B8              <1>     mov ax, 0B800h
+    24 000004B9 8EC0                <1>     mov es, ax
+    25 000004BB BF5A00              <1>     mov di, 90            ; Timer right after "Time:" label
+    26                              <1> 
+    27 000004BE 2EA1[8704]          <1>     mov ax, [cs:current_time]
+    28 000004C2 BB0A00              <1>     mov bx, 10
+    29 000004C5 31D2                <1>     xor dx, dx
+    30 000004C7 F7F3                <1>     div bx           ; AX = quotient, DX = remainder
+    31                              <1> 
+    32                              <1>     ; tens digit
+    33 000004C9 0430                <1>     add al, '0'
+    34 000004CB B407                <1>     mov ah, 07h
+    35 000004CD 268905              <1>     mov [es:di], ax
+    36 000004D0 83C702              <1>     add di, 2
+    37                              <1> 
+    38                              <1>     ; ones digit
+    39 000004D3 88D0                <1>     mov al, dl
+    40 000004D5 0430                <1>     add al, '0'
+    41 000004D7 B407                <1>     mov ah, 07h
+    42 000004D9 268905              <1>     mov [es:di], ax
+    43                              <1> 
+    44 000004DC EB07                <1>     jmp skipp2
+    45                              <1> 
+    46                              <1> stop_program2:
+    47 000004DE 2EC706[8304]0100    <1>     mov word [cs:done], 1
+    48                              <1> 
+    49                              <1> skipp2:
+    50 000004E5 B020                <1>     mov al, 20h
+    51 000004E7 E620                <1>     out 20h, al
+    52                              <1> 
+    53 000004E9 07                  <1>     pop es
+    54 000004EA 5F                  <1>     pop di
+    55 000004EB 5E                  <1>     pop si
+    56 000004EC 5A                  <1>     pop dx
+    57 000004ED 59                  <1>     pop cx
+    58 000004EE 5B                  <1>     pop bx
+    59 000004EF 58                  <1>     pop ax
+    60                              <1> 
+    61 000004F0 2E833E[8304]01      <1>     cmp word [cs:done], 1
+    62 000004F6 7505                <1>     jne no_chain2
+    63 000004F8 2EFF2E[7F04]        <1>     jmp far [cs:old]
+    64                              <1> 
+    65                              <1> no_chain2:
+    66 000004FD CF                  <1>     iret
+    16                                  ; ==================== RANDOM NUMBER GENERATION ====================
+    17                                  ; Better random number generator (returns 0-255 in AL)
+    18                                  generate_random:
+    19 000004FE 53                          push bx
+    20 000004FF 52                          push dx
+    21                                      
+    22                                      ; Improved LCG with better parameters
+    23 00000500 2EA1[5604]                  mov ax, [cs:random_seed]
+    24 00000504 BB4D35                      mov bx, 13645
+    25 00000507 F7E3                        mul bx
+    26 00000509 05013E                      add ax, 15873
+    27 0000050C 2EA3[5604]                  mov [cs:random_seed], ax
+    28                                      
+    29                                      ; Use the high byte for more randomness
+    30 00000510 88E0                        mov al, ah
+    31                                      
+    32 00000512 5A                          pop dx
+    33 00000513 5B                          pop bx
+    34 00000514 C3                          ret
+    35                                  
+    36                                  ; Generate random letter A-Z
+    37                                  generate_random_letter:
+    38 00000515 53                          push bx
+    39 00000516 52                          push dx
+    40                                      
+    41 00000517 E8E4FF                      call generate_random
+    42 0000051A 241F                        and al, 31          ; 0-31 range
+    43 0000051C 3C1A                        cmp al, 26
+    44 0000051E 7202                        jb letter_ok
+    45 00000520 2C06                        sub al, 6           ; if 26-31, make it 20-25
+    46                                  letter_ok:
+    47 00000522 0441                        add al, 'A'         ; convert to 'A'-'Z'
+    48                                      
+    49 00000524 5A                          pop dx
+    50 00000525 5B                          pop bx
+    51 00000526 C3                          ret
+    52                                  
+    53                                  ; Generate random column (20-75) with collision avoidance
+    54                                  generate_random_column:
+    55 00000527 53                          push bx
+    56 00000528 51                          push cx
+    57 00000529 56                          push si
+    58                                      
+    59                                  try_new_column:
+    60 0000052A E8D1FF                      call generate_random
+    61 0000052D 83E037                      and ax, 55          ; 0-55 range
+    62 00000530 83C014                      add ax, 20          ; 20-75 range
+    63                                      
+    64                                      ; Check collision with existing balloons (8 columns apart)
+    65 00000533 B90300                      mov cx, BALL_COUNT
+    66 00000536 BE0000                      mov si, 0
+    67                                  ; check_collision_loop:
+    68                                  ;     cmp word [cs:ball_cols + si], 0
+    69                                  ;     je next_balloon_check
+    70                                      
+    71                                  ;     mov bx, [cs:ball_cols + si]
+    72                                  ;     sub bx, ax
+    73                                  ;     jns positive_diff
+    74                                  ;     neg bx
+    75                                  ; positive_diff:
+    76                                  ;     cmp bx, 8           ; need at least 8 columns apart
+    77                                  ;     jl try_new_column   ; too close, try again
+    78                                      
+    79                                  ; next_balloon_check:
+    80                                  ;     add si, 2
+    81                                  ;     loop check_collision_loop
+    82                                      
+    83 00000539 5E                          pop si
+    84 0000053A 59                          pop cx
+    85 0000053B 5B                          pop bx
+    86 0000053C C3                          ret
+    87                                  
+    88                                  ; Function to update all balloon letters and positions with random ones
+    89                                  update_balloon_letters:
+    90 0000053D 60                          pusha
+    91 0000053E B90300                      mov cx, BALL_COUNT
+    92 00000541 BE0000                      mov si, 0
+    93                                      
+    94                                  update_letters_loop:
+    95 00000544 E8CEFF                      call generate_random_letter
+    96 00000547 2E8884[5304]                mov [cs:ball_letters + si], al  ; store new random letter
+    97                                      
+    98                                      ; Also update random column position
+    99 0000054C 56                          push si
+   100 0000054D D1E6                        shl si, 1                      ; convert to word index
+   101 0000054F E8D5FF                      call generate_random_column
+   102 00000552 2E8984[4D04]                mov [cs:ball_cols + si], ax    ; store random column
+   103 00000557 5E                          pop si
+   104                                      
+   105 00000558 46                          inc si
+   106 00000559 E2E9                        loop update_letters_loop
+   107 0000055B 61                          popa
+   108 0000055C C3                          ret
+   109                                  
+   110                                  ; ==================== SCORE MANAGEMENT ====================
+   111                                  ; Increase score by 10 and update display
+   112                                  increase_score:
+   113 0000055D 60                          pusha
+   114                                      
+   115                                      ; Increase score by 10
+   116 0000055E 2E8306[5D04]0A              add word [cs:score], 10
+   117                                      
+   118                                      ; Update score string
+   119 00000564 2EA1[5D04]                  mov ax, [cs:score]
+   120 00000568 BB0A00                      mov bx, 10
+   121 0000056B B90300                      mov cx, 3           ; We want 3 digits
+   122 0000056E BE[6704]                    mov si, score_string + 8  ; point to last digit position
+   123                                      
+   124                                  convert_score:
+   125 00000571 31D2                        xor dx, dx
+   126 00000573 F7F3                        div bx              ; AX = quotient, DX = remainder
+   127 00000575 80C230                      add dl, '0'         ; convert to ASCII
+   128 00000578 8814                        mov [si], dl        ; store digit
+   129 0000057A 4E                          dec si
+   130 0000057B E2F4                        loop convert_score
+   131                                      
+   132                                      ; Update score display immediately
+   133 0000057D 6A00                        push 0
+   134 0000057F 68[5F04]                    push score_string
+   135 00000582 2EFF36[6904]                push word [cs:score_length]
+   136 00000587 E8D4FD                      call print
+   137                                      
+   138 0000058A 61                          popa
+   139 0000058B C3                          ret
+   140                                  
+   141                                  ; Check if pressed key matches any balloon letter
+   142                                  check_balloon_pop:
+   143 0000058C 60                          pusha
+   144 0000058D 2EA0[5C04]                  mov al, [cs:current_key]
+   145 00000591 3C00                        cmp al, 0
+   146 00000593 0F849D00                    je pop_done
+   147                                      
+   148                                      ; Check balloon 1
+   149 00000597 2E3A06[5304]                cmp al, [cs:ball_letters]
+   150 0000059C 752E                        jne check_balloon2_pop
+   151 0000059E 2E803E[6B04]01              cmp byte [cs:balloon1_active], 1
+   152 000005A4 7526                        jne check_balloon2_pop
+   153                                      ; Pop balloon 1
+   154 000005A6 2EC606[6B04]00              mov byte [cs:balloon1_active], 0
+   155 000005AC E8AEFF                      call increase_score
+   156                                      ; Immediately reset balloon 1
+   157 000005AF 2EC706[4704]1700            mov word [cs:ball_rows], 23    ; reset to bottom
+   158 000005B6 E86EFF                      call generate_random_column    ; new random position
+   159 000005B9 2EA3[4D04]                  mov [cs:ball_cols], ax
+   160 000005BD E855FF                      call generate_random_letter    ; new random letter
+   161 000005C0 2EA2[5304]                  mov [cs:ball_letters], al
+   162 000005C4 2EC606[6B04]01              mov byte [cs:balloon1_active], 1  ; reactivate
+   163 000005CA EB68                        jmp pop_done
+   164                                      
+   165                                  check_balloon2_pop:
+   166                                      ; Check balloon 2
+   167 000005CC 2E3A06[5404]                cmp al, [cs:ball_letters + 1]
+   168 000005D1 752E                        jne check_balloon3_pop
+   169 000005D3 2E803E[6C04]01              cmp byte [cs:balloon2_active], 1
+   170 000005D9 7526                        jne check_balloon3_pop
+   171                                      ; Pop balloon 2
+   172 000005DB 2EC606[6C04]00              mov byte [cs:balloon2_active], 0
+   173 000005E1 E879FF                      call increase_score
+   174                                      ; Immediately reset balloon 2
+   175 000005E4 2EC706[4904]1700            mov word [cs:ball_rows + 2], 23 ; reset to bottom
+   176 000005EB E839FF                      call generate_random_column    ; new random position
+   177 000005EE 2EA3[4F04]                  mov [cs:ball_cols + 2], ax
+   178 000005F2 E820FF                      call generate_random_letter    ; new random letter
+   179 000005F5 2EA2[5404]                  mov [cs:ball_letters + 1], al
+   180 000005F9 2EC606[6C04]01              mov byte [cs:balloon2_active], 1  ; reactivate
+   181 000005FF EB33                        jmp pop_done
+   182                                      
+   183                                  check_balloon3_pop:
+   184                                      ; Check balloon 3
+   185 00000601 2E3A06[5504]                cmp al, [cs:ball_letters + 2]
+   186 00000606 752C                        jne pop_done
+   187 00000608 2E803E[6D04]01              cmp byte [cs:balloon3_active], 1
+   188 0000060E 7524                        jne pop_done
+   189                                      ; Pop balloon 3
+   190 00000610 2EC606[6D04]00              mov byte [cs:balloon3_active], 0
+   191 00000616 E844FF                      call increase_score
+   192                                      ; Immediately reset balloon 3
+   193 00000619 2EC706[4B04]1700            mov word [cs:ball_rows + 4], 23 ; reset to bottom
+   194 00000620 E804FF                      call generate_random_column    ; new random position
+   195 00000623 2EA3[5104]                  mov [cs:ball_cols + 4], ax
+   196 00000627 E8EBFE                      call generate_random_letter    ; new random letter
+   197 0000062A 2EA2[5504]                  mov [cs:ball_letters + 2], al
+   198 0000062E 2EC606[6D04]01              mov byte [cs:balloon3_active], 1  ; reactivate
+   199                                      
+   200                                  pop_done:
+   201 00000634 61                          popa
+   202 00000635 C3                          ret
+   203                                  
+   204                                  ; ==================== KEYBOARD INTERRUPT HANDLER ====================
+   205                                  ; Keyboard interrupt handler (INT 9)
+   206                                  keyboard_isr:
+   207 00000636 50                          push ax
+   208 00000637 53                          push bx
+   209 00000638 06                          push es
+   210                                      
+   211                                      ; Read keyboard scan code
+   212 00000639 E460                        in al, 60h
+   213                                      
+   214                                     
+   215                                      
+   216                                      ; Convert scan code to ASCII
+   217 0000063B E850FD                      call scan_to_ascii
+   218 0000063E 2EA2[5C04]                  mov [cs:current_key], al
+   219                                      
+   220                                      ; Check if it matches any balloon letter
+   221 00000642 E847FF                      call check_balloon_pop
+   222                                      
+   223                                  
+   224                                      
+   225                                      ; Send EOI to PIC
+   226 00000645 B020                        mov al, 20h
+   227 00000647 E620                        out 20h, al
+   228                                      
+   229 00000649 07                          pop es
+   230 0000064A 5B                          pop bx
+   231 0000064B 58                          pop ax
+   232 0000064C CF                          iret
+   233                                  
+   234                                  
+   235                                  
+   236                                  ; ==================== GAME LOGIC ====================
+   237                                  repeater:
+   238 0000064D 60                          pusha
+   239                                      
+   240                                      ; Initialize balloon states and random positions
+   241 0000064E 2EC606[6B04]01              mov byte [cs:balloon1_active], 1
+   242 00000654 2EC606[6C04]00              mov byte [cs:balloon2_active], 0  
+   243 0000065A 2EC606[6D04]00              mov byte [cs:balloon3_active], 0
+   244 00000660 2EC706[6E04]0000            mov word [cs:spawn_timer], 0
+   245                                      
+   246                                      ; Initialize random positions for all balloons
+   247 00000667 E8D3FE                      call update_balloon_letters
+   248                                      
+   249                                  game_loop:
+   250                                      ; Check if game should end
+   251 0000066A 2E833E[8704]00              cmp word [cs:current_time], 0
+   252 00000670 0F8EFC00                    jle end_repeater
+   253                                      
+   254                                      ; CLEAR ENTIRE SCREEN each frame
+   255 00000674 E809FA                      call clear
+   256                                      
+   257                                      ; Update spawn timer and activate balloons with delay
+   258 00000677 2EFF06[6E04]                inc word [cs:spawn_timer]
+   259 0000067C 2E833E[6E04]14              cmp word [cs:spawn_timer], 20  ; ~1 second delay
+   260 00000682 7C14                        jl check_balloons
+   261 00000684 2EC606[6C04]01              mov byte [cs:balloon2_active], 1
+   262                                      
+   263 0000068A 2E833E[6E04]28              cmp word [cs:spawn_timer], 40  ; ~2 second delay  
+   264 00000690 7C06                        jl check_balloons
+   265 00000692 2EC606[6D04]01              mov byte [cs:balloon3_active], 1
+   266                                      
+   267                                  check_balloons:
+   268                                      ; Update and draw balloon 1 (always active)
+   269 00000698 2E803E[6B04]01              cmp byte [cs:balloon1_active], 1
+   270 0000069E 7536                        jne check_balloon2
+   271                                      
+   272 000006A0 2EFF0E[4704]                dec word [cs:ball_rows]        ; move balloon 1 up
+   273 000006A5 2E833E[4704]00              cmp word [cs:ball_rows], 0     ; check if reached top (row 1)
+   274 000006AB 7F15                        jg draw_balloon1
+   275                                      ; Reset balloon 1 if it reaches top
+   276 000006AD 2EC706[4704]1700            mov word [cs:ball_rows], 23    ; reset to bottom
+   277 000006B4 E870FE                      call generate_random_column    ; new random position
+   278 000006B7 2EA3[4D04]                  mov [cs:ball_cols], ax
+   279 000006BB E857FE                      call generate_random_letter    ; new random letter
+   280 000006BE 2EA2[5304]                  mov [cs:ball_letters], al
+   281                                      
+   282                                  draw_balloon1:
+   283 000006C2 2EA0[5304]                  mov al, [cs:ball_letters]      ; get random letter for balloon 1
+   284 000006C6 B400                        mov ah, 0
+   285 000006C8 50                          push ax                        ; push letter
+   286 000006C9 2EFF36[4D04]                push word [cs:ball_cols]       ; column
+   287 000006CE 2EFF36[4704]                push word [cs:ball_rows]       ; row
+   288 000006D3 E82DF9                      call draw
+   289                                  
+   290                                  check_balloon2:
+   291                                      ; Update and draw balloon 2 (activated after delay)
+   292 000006D6 2E803E[6C04]01              cmp byte [cs:balloon2_active], 1
+   293 000006DC 7536                        jne check_balloon3
+   294                                      
+   295 000006DE 2EFF0E[4904]                dec word [cs:ball_rows + 2]    ; move balloon 2 up
+   296 000006E3 2E833E[4904]00              cmp word [cs:ball_rows + 2], 0 ; check if reached top (row 1)
+   297 000006E9 7F15                        jg draw_balloon2
+   298                                      ; Reset balloon 2 if it reaches top
+   299 000006EB 2EC706[4904]1700            mov word [cs:ball_rows + 2], 23 ; reset to bottom
+   300 000006F2 E832FE                      call generate_random_column    ; new random position
+   301 000006F5 2EA3[4F04]                  mov [cs:ball_cols + 2], ax
+   302 000006F9 E819FE                      call generate_random_letter    ; new random letter
+   303 000006FC 2EA2[5404]                  mov [cs:ball_letters + 1], al
+   304                                      
+   305                                  draw_balloon2:
+   306 00000700 2EA0[5404]                  mov al, [cs:ball_letters + 1]  ; get random letter for balloon 2
+   307 00000704 B400                        mov ah, 0
+   308 00000706 50                          push ax                        ; push letter
+   309 00000707 2EFF36[4F04]                push word [cs:ball_cols + 2]   ; column
+   310 0000070C 2EFF36[4904]                push word [cs:ball_rows + 2]   ; row
+   311 00000711 E8EFF8                      call draw
+   312                                  
+   313                                  check_balloon3:
+   314                                      ; Update and draw balloon 3 (activated after longer delay)
+   315 00000714 2E803E[6D04]01              cmp byte [cs:balloon3_active], 1
+   316 0000071A 7536                        jne update_ui
+   317                                      
+   318 0000071C 2EFF0E[4B04]                dec word [cs:ball_rows + 4]    ; move balloon 3 up
+   319 00000721 2E833E[4B04]00              cmp word [cs:ball_rows + 4], 0 ; check if reached top (row 1)
+   320 00000727 7F15                        jg draw_balloon3
+   321                                      ; Reset balloon 3 if it reaches top
+   322 00000729 2EC706[4B04]1700            mov word [cs:ball_rows + 4], 23 ; reset to bottom
+   323 00000730 E8F4FD                      call generate_random_column    ; new random position
+   324 00000733 2EA3[5104]                  mov [cs:ball_cols + 4], ax
+   325 00000737 E8DBFD                      call generate_random_letter    ; new random letter
+   326 0000073A 2EA2[5504]                  mov [cs:ball_letters + 2], al
+   327                                      
+   328                                  draw_balloon3:
+   329 0000073E 2EA0[5504]                  mov al, [cs:ball_letters + 2]  ; get random letter for balloon 3
+   330 00000742 B400                        mov ah, 0
+   331 00000744 50                          push ax                        ; push letter
+   332 00000745 2EFF36[5104]                push word [cs:ball_cols + 4]   ; column
+   333 0000074A 2EFF36[4B04]                push word [cs:ball_rows + 4]   ; row
+   334 0000074F E8B1F8                      call draw
+   335                                  
+   336                                  update_ui:
+   337                                      ; Update UI (score and time)
+   338 00000752 6A00                        push 0                 ; position for score
+   339 00000754 68[5F04]                    push score_string      ; "Score:000" string  
+   340 00000757 FF36[6904]                  push word [score_length] ; score string length
+   341 0000075B E800FC                      call print
+   342                                      
+   343 0000075E 6A28                        push 40                ; position for time label
+   344 00000760 68[7604]                    push inst1             ; "Time:" string
+   345 00000763 FF36[7D04]                  push word [size1]      ; time string length  
+   346 00000767 E8F4FB                      call print
+   347                                      
+   348                                      ; Delay between frames
+   349 0000076A E834F9                      call delay
+   350                                      
+   351 0000076D E9FAFE                      jmp game_loop
+   352                                  
+   353                                  end_repeater:
+   354 00000770 61                          popa
+   355 00000771 C3                          ret
+   356                                  
+   357                                  ; ==================== MAIN PROGRAM ====================
+   358                                  start:
+   359 00000772 E8DFFB                      call starter
+   360                                      
+   361                                  key:   
+   362 00000775 B400                        mov ah, 0
+   363 00000777 CD16                        int 16h
+   364 00000779 80FC01                      cmp ah, 0x01        ; Escape key
+   365 0000077C 0F84A100                    je end
+   366 00000780 80FC39                      cmp ah, 0x39        ; Spacebar
+   367 00000783 75F0                        jne key
+   368                                  
+   369 00000785 E8F8F8                      call clear  
+   370 00000788 31C0                        xor ax, ax
+   371 0000078A 8EC0                        mov es, ax
+   372                                      
+   373                                      ; Save old interrupts
+   374 0000078C 26A12000                    mov ax, [es:8*4]
+   375 00000790 2EA3[7F04]                  mov word [cs:old], ax
+   376 00000794 26A12200                    mov ax, [es:8*4+2]
+   377 00000798 2EA3[8104]                  mov word [cs:old+2], ax
+   378                                      
+   379 0000079C 26A12400                    mov ax, [es:9*4]
+   380 000007A0 2EA3[5804]                  mov word [cs:old_keyboard], ax
+   381 000007A4 26A12600                    mov ax, [es:9*4+2]
+   382 000007A8 2EA3[5A04]                  mov word [cs:old_keyboard+2], ax
+   383                                      
+   384                                      ; Set up interrupts
+   385 000007AC FA                          cli 
+   386 000007AD 26C7062000[8E04]            mov word [es:8*4], timer   
+   387 000007B4 268C0E2200                  mov word [es:8*4+2], cs
+   388                                      
+   389 000007B9 26C7062400[3606]            mov word [es:9*4], keyboard_isr
+   390 000007C0 268C0E2600                  mov word [es:9*4+2], cs
+   391 000007C5 FB                          sti
+   392                                      
+   393                                      ; Initialize game state
+   394 000007C6 2EC706[5D04]0000            mov word [cs:score], 0
+   395                                      ; Initialize score string to "Score:000"
+   396 000007CD C606[6504]30                mov byte [score_string + 6], '0'
+   397 000007D2 C606[6604]30                mov byte [score_string + 7], '0'
+   398 000007D7 C606[6704]30                mov byte [score_string + 8], '0'
+   399 000007DC E85EFD                      call update_balloon_letters
+   400                                      
+   401                                      ; Print initial UI
+   402 000007DF 6A00                        push 0
+   403 000007E1 68[5F04]                    push score_string
+   404 000007E4 FF36[6904]                  push word [score_length]
+   405 000007E8 E873FB                      call print
+   406                                      
+   407 000007EB 6A28                        push 40
+   408 000007ED 68[7604]                    push inst1
+   409 000007F0 FF36[7D04]                  push word [size1]
+   410 000007F4 E867FB                      call print
+   411                                      
+   412                                      ; Start balloon animation
+   413 000007F7 E853FE                      call repeater
+   414                                       
+   415                                       
+   416                                  
+   417                                  
+   418                                      ; Restore interrupts when done
+   419 000007FA 2EC706[8304]0100            mov word [cs:done], 1
+   420 00000801 2EA1[7F04]                  mov ax, [cs:old]
+   421 00000805 26A32000                    mov [es:8*4], ax
+   422 00000809 2EA1[8104]                  mov ax, [cs:old+2]
+   423 0000080D 26A32200                    mov [es:8*4+2], ax
+   424                                      
+   425 00000811 2EA1[5804]                  mov ax, [cs:old_keyboard]
+   426 00000815 26A32400                    mov [es:9*4], ax
+   427 00000819 2EA1[5A04]                  mov ax, [cs:old_keyboard+2]
+   428 0000081D 26A32600                    mov [es:9*4+2], ax
+   429                                  
+   430                                  end:
+   431 00000821 B8004C                      mov ax, 0x4c00
+   432 00000824 CD21                        int 0x21

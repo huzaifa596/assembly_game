@@ -1,62 +1,66 @@
-[org 0x100]
-
-tick: dw 0
-current_time: dw 60  ; Start from 60
-
-printnum:
-    push bp
-    mov bp,sp
-    pusha
-    push es
-    mov ax,0xb800
-    mov es,ax
-    mov cx,0
-    mov ax,[bp+4]
-    mov bx,10  ; divisor for decimal conversion
-
-nextdigit:
-    mov dx,0
-    div bx
-    add dl,0x30
-    push dx
-    inc cx
-    cmp ax,0
-    jne nextdigit   
-    mov di,140
-
-nextpos:
-    pop dx
-    mov dh,0x07
-    mov [es:di],dx
-    add di,2
-    loop nextpos
-    pop es
-    popa
-    pop bp  
-    ret 2
-
+; ==================== TIMER INTERRUPT HANDLER ====================
+%include "data.asm"
 timer:
     push ax
-    inc word[cs:tick]
-    cmp word[cs:tick],18  ; Wait for 18 ticks (approximately 1 second)
-    jne skip
-    
-    ; Reset tick counter and decrement time
-    mov word[cs:tick],0
-    dec word[cs:current_time]
-    
-    ; Check if timer reached 0
-    
-    ; Display current time
-    push word[cs:current_time]
-    call printnum
-    jmp skip
-    
+    push bx
+    push cx
+    push dx
+    push si
+    push di
+    push es
 
-    
-skip:
-    mov al,0x20
-    out 0x20,al
+    inc word [cs:tick]
+    cmp word [cs:tick], 18
+    jne skipp2
+
+    mov word [cs:tick], 0
+    dec word [cs:current_time]
+
+    cmp word [cs:current_time], 0
+    jle stop_program2
+
+    ; -------- display time ----------
+    mov ax, 0B800h
+    mov es, ax
+    mov di, 90            ; Timer right after "Time:" label
+
+    mov ax, [cs:current_time]
+    mov bx, 10
+    xor dx, dx
+    div bx           ; AX = quotient, DX = remainder
+
+    ; tens digit
+    add al, '0'
+    mov ah, 07h
+    mov [es:di], ax
+    add di, 2
+
+    ; ones digit
+    mov al, dl
+    add al, '0'
+    mov ah, 07h
+    mov [es:di], ax
+
+    jmp skipp2
+
+stop_program2:
+    mov word [cs:done], 1
+
+skipp2:
+    mov al, 20h
+    out 20h, al
+
+    pop es
+    pop di
+    pop si
+    pop dx
+    pop cx
+    pop bx
     pop ax
-    iret
 
+    cmp word [cs:done], 1
+    jne no_chain2
+    jmp far [cs:old]
+
+no_chain2:
+    iret
