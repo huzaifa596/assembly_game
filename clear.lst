@@ -1,0 +1,30 @@
+     1                                  ; clear.asm
+     2                                  ; INPUT:
+     3                                  ;   [bp+6] = row
+     4                                  ;   [bp+4] = col
+     5                                  ;   [bp+2] = char (ignored)
+     6                                  ; OUTPUT:
+     7                                  ;   Clears the screen cell at (row, col)
+     8                                  
+     9                                  clear:
+    10 00000000 55                          push bp
+    11 00000001 89E5                        mov bp, sp
+    12 00000003 50                          push ax
+    13 00000004 57                          push di
+    14                                  
+    15 00000005 B800B8                      mov ax, 0B800h
+    16 00000008 8EC0                        mov es, ax
+    17                                  
+    18 0000000A B85000                      mov ax, 80
+    19 0000000D F76606                      mul word [bp+6]      ; AX = row * 80
+    20 00000010 034604                      add ax, [bp+4]       ; AX = row*80 + col
+    21 00000013 D1E0                        shl ax, 1            ; each cell = 2 bytes
+    22 00000015 89C7                        mov di, ax
+    23                                  
+    24 00000017 B82007                      mov ax, ' ' + (07h << 8)   ; space with attribute
+    25 0000001A 268905                      mov [es:di], ax            ; write space + attribute
+    26                                  
+    27 0000001D 5F                          pop di
+    28 0000001E 58                          pop ax
+    29 0000001F 5D                          pop bp
+    30 00000020 C20600                      ret 6
